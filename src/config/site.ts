@@ -8,7 +8,7 @@ export const siteConfig = {
   location: "Ahmedabad, Gujarat, India",
 
   // Replace these placeholders before publishing.
-  email: "krish@example.com",
+  email: "parthgajjar127@gmail.com",
   phone: "+97 9714485898",
 
   social: {
