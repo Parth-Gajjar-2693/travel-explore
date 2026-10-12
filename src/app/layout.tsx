@@ -1,24 +1,26 @@
 import type { Metadata } from "next";
+
 import "./globals.css";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
+import { siteConfig } from "../config/site";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
-  ),
   title: {
-    default: "Chamunda Tours & Travels | Plan Your Next Journey",
-    template: "%s | Chamunda Tours & Travels",
+    default: `${siteConfig.name} | Explore India`,
+    template: `%s | ${siteConfig.name}`,
   },
+
   description:
-    "Discover exciting destinations, explore holiday packages, and plan your next journey with Chamunda Tours & Travels.",
-  applicationName: "Chamunda Tours & Travels",
+    "Explore destinations across India, discover tour packages, and plan your next journey with Chamunda Tours & Travels.",
+
+  applicationName: siteConfig.name,
+
   openGraph: {
-    title: "Chamunda Tours & Travels",
+    title: siteConfig.name,
     description:
-      "Your journey, our priority. Discover destinations and plan memorable trips with Chamunda Tours & Travels.",
-    siteName: "Chamunda Tours & Travels",
+      "Discover destinations and explore travel packages with Chamunda Tours & Travels.",
+    siteName: siteConfig.name,
     type: "website",
   },
 };
