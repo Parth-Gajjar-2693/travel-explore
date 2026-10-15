@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, MapPin } from "lucide-react";
-import { Destination } from "@/src/data/travels";
+import { Destination } from "@/data/travels";
 
 interface DestinationCardProps {
   destination: Destination;

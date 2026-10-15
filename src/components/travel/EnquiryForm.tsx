@@ -1,5 +1,6 @@
 "use client";
 
+import emailjs from "@emailjs/browser";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,9 +32,7 @@ const enquirySchema = z.object({
     .regex(/^[+\d\s()-]+$/, "Please enter a valid phone number."),
   destination: z.string().min(1, "Please select a destination."),
   travelDate: z.string().optional(),
-  travellers: z
-    .string()
-    .min(1, "Please select the number of travellers."),
+  travellers: z.string().min(1, "Please select the number of travellers."),
   message: z
     .string()
     .trim()
@@ -48,9 +47,19 @@ const inputClass =
 
 const labelClass = "mb-2 block text-sm font-semibold text-gray-700";
 
+const EMAILJS_SERVICE_ID =
+  process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+
+const EMAILJS_TEMPLATE_ID =
+  process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
+
+const EMAILJS_PUBLIC_KEY =
+  process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
+
 export default function EnquiryForm() {
   const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const {
     register,
@@ -70,17 +79,13 @@ export default function EnquiryForm() {
     },
   });
 
-  const onSubmit = async (values: EnquiryFormValues) => {
-    setSubmitted(false);
-    setFormError("");
+  const getDestinationName = (slug: string) =>
+    destinations.find((item) => item.slug === slug)?.name ?? slug;
 
-    const destinationName =
-      destinations.find((item) => item.slug === values.destination)?.name ??
-      values.destination;
+  const buildMessage = (values: EnquiryFormValues) => {
+    const destinationName = getDestinationName(values.destination);
 
-    const subject = `Travel Enquiry - ${destinationName}`;
-
-    const body = [
+    return [
       "Hello Chamunda Tours & Travels,",
       "",
       "I would like to enquire about a travel package.",
@@ -97,24 +102,94 @@ export default function EnquiryForm() {
       "",
       "Thank you.",
     ].join("\n");
+  };
 
-    const mailtoUrl =
-      `mailto:${siteConfig.email}` +
-      `?subject=${encodeURIComponent(subject)}` +
-      `&body=${encodeURIComponent(body)}`;
+  // Send enquiry to your configured email through EmailJS.
+  const onSubmitEmail = async (values: EnquiryFormValues) => {
+    setSubmitted(false);
+    setFormError("");
+
+    if (
+      !EMAILJS_SERVICE_ID ||
+      !EMAILJS_TEMPLATE_ID ||
+      !EMAILJS_PUBLIC_KEY
+    ) {
+      setFormError(
+        "Email delivery is not configured. Check your EmailJS environment variables and restart the development server."
+      );
+      return;
+    }
+
+    const destinationName = getDestinationName(values.destination);
 
     try {
-      window.location.href = mailtoUrl;
+      setSendingEmail(true);
+
+      await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          customer_name: values.name,
+          customer_email: values.email,
+          customer_phone: values.phone,
+          destination: destinationName,
+          travel_date: values.travelDate || "Flexible",
+          travellers: values.travellers,
+          message: values.message,
+          subject: `Travel Enquiry - ${destinationName}`,
+          reply_to: values.email,
+        },
+        {
+          publicKey: EMAILJS_PUBLIC_KEY,
+        }
+      );
+
       setSubmitted(true);
       reset();
-    } catch {
+    } catch (error) {
+      console.error("EmailJS enquiry error:", error);
+
       setFormError(
-        "We couldn't open your email application. Please contact us directly."
+        "We couldn't send your enquiry. Please try again or use WhatsApp."
       );
+    } finally {
+      setSendingEmail(false);
     }
   };
 
+  // Open WhatsApp with the enquiry message prefilled.
+  const onSubmitWhatsApp = (values: EnquiryFormValues) => {
+    setSubmitted(false);
+    setFormError("");
+
+    const whatsappNumber = String(
+      (
+        siteConfig as typeof siteConfig & {
+          whatsappNumber?: string;
+        }
+      ).whatsappNumber ?? ""
+    ).replace(/\D/g, "");
+
+    if (
+      !whatsappNumber ||
+      whatsappNumber.length < 10 ||
+      whatsappNumber.includes("X")
+    ) {
+      setFormError(
+        "WhatsApp is not configured. Add your complete WhatsApp number, including the country code, to src/config/site.ts."
+      );
+      return;
+    }
+
+    const whatsappUrl =
+      `https://wa.me/${whatsappNumber}?text=` +
+      encodeURIComponent(buildMessage(values));
+
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+  };
+
   const today = new Date();
+
   const minDate = [
     today.getFullYear(),
     String(today.getMonth() + 1).padStart(2, "0"),
@@ -123,6 +198,7 @@ export default function EnquiryForm() {
 
   return (
     <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-xl shadow-blue-950/5 sm:p-8 lg:p-10">
+      {/* Heading */}
       <div className="mb-8">
         <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-orange-600">
           <MessageSquare className="h-4 w-4" />
@@ -134,10 +210,12 @@ export default function EnquiryForm() {
         </h2>
 
         <p className="mt-3 text-sm leading-7 text-gray-500">
-          Share your travel preferences, and prepare an enquiry for our team.
+          Share your travel preferences and choose how you would like to
+          send your enquiry.
         </p>
       </div>
 
+      {/* Email success message */}
       {submitted && (
         <div
           role="status"
@@ -147,18 +225,18 @@ export default function EnquiryForm() {
 
           <div>
             <p className="font-semibold text-green-800">
-              Your enquiry details are ready.
+              Your enquiry was sent successfully!
             </p>
 
             <p className="mt-1 text-sm leading-6 text-green-700">
-              If your email application opened, review the message and press
-              Send to contact us. If it didn't open, please use our contact
-              details instead.
+              Thank you for contacting Chamunda Tours &amp; Travels.
+              Your enquiry has been accepted by the email service.
             </p>
           </div>
         </div>
       )}
 
+      {/* Error message */}
       {formError && (
         <div
           role="alert"
@@ -168,7 +246,7 @@ export default function EnquiryForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form noValidate onSubmit={handleSubmit(onSubmitEmail)}>
         <div className="grid gap-5 sm:grid-cols-2">
           {/* Name */}
           <div>
@@ -185,7 +263,9 @@ export default function EnquiryForm() {
                 {...register("name")}
                 placeholder="Enter your full name"
                 aria-invalid={!!errors.name}
-                aria-describedby={errors.name ? "name-error" : undefined}
+                aria-describedby={
+                  errors.name ? "name-error" : undefined
+                }
                 className={`${inputClass} pl-10`}
               />
             </div>
@@ -213,7 +293,9 @@ export default function EnquiryForm() {
                 {...register("email")}
                 placeholder="you@example.com"
                 aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? "email-error" : undefined}
+                aria-describedby={
+                  errors.email ? "email-error" : undefined
+                }
                 className={`${inputClass} pl-10`}
               />
             </div>
@@ -241,7 +323,9 @@ export default function EnquiryForm() {
                 {...register("phone")}
                 placeholder="+91 98765 43210"
                 aria-invalid={!!errors.phone}
-                aria-describedby={errors.phone ? "phone-error" : undefined}
+                aria-describedby={
+                  errors.phone ? "phone-error" : undefined
+                }
                 className={`${inputClass} pl-10`}
               />
             </div>
@@ -256,7 +340,8 @@ export default function EnquiryForm() {
           {/* Destination */}
           <div>
             <label htmlFor="destination" className={labelClass}>
-              Preferred Destination <span className="text-red-500">*</span>
+              Preferred Destination{" "}
+              <span className="text-red-500">*</span>
             </label>
 
             <div className="relative">
@@ -274,7 +359,10 @@ export default function EnquiryForm() {
                 <option value="">Select destination</option>
 
                 {destinations.map((destination) => (
-                  <option key={destination.id} value={destination.slug}>
+                  <option
+                    key={destination.id}
+                    value={destination.slug}
+                  >
                     {destination.name}
                   </option>
                 ))}
@@ -293,7 +381,7 @@ export default function EnquiryForm() {
             )}
           </div>
 
-          {/* Travel Date */}
+          {/* Travel date */}
           <div>
             <label htmlFor="travelDate" className={labelClass}>
               Preferred Travel Date
@@ -310,18 +398,13 @@ export default function EnquiryForm() {
                 className={`${inputClass} pl-10`}
               />
             </div>
-
-            {errors.travelDate && (
-              <p className="mt-2 text-xs text-red-600">
-                {errors.travelDate.message}
-              </p>
-            )}
           </div>
 
           {/* Travellers */}
           <div>
             <label htmlFor="travellers" className={labelClass}>
-              Number of Travellers <span className="text-red-500">*</span>
+              Number of Travellers{" "}
+              <span className="text-red-500">*</span>
             </label>
 
             <div className="relative">
@@ -331,6 +414,9 @@ export default function EnquiryForm() {
                 id="travellers"
                 {...register("travellers")}
                 aria-invalid={!!errors.travellers}
+                aria-describedby={
+                  errors.travellers ? "travellers-error" : undefined
+                }
                 className={`${inputClass} pl-10`}
               >
                 <option value="">Select travellers</option>
@@ -343,7 +429,10 @@ export default function EnquiryForm() {
             </div>
 
             {errors.travellers && (
-              <p className="mt-2 text-xs text-red-600">
+              <p
+                id="travellers-error"
+                className="mt-2 text-xs text-red-600"
+              >
                 {errors.travellers.message}
               </p>
             )}
@@ -362,36 +451,53 @@ export default function EnquiryForm() {
               {...register("message")}
               placeholder="Tell us about your preferred destination, budget, travel plans, or any special requirements..."
               aria-invalid={!!errors.message}
-              aria-describedby={errors.message ? "message-error" : undefined}
+              aria-describedby={
+                errors.message ? "message-error" : undefined
+              }
               className={`${inputClass} resize-y`}
             />
 
             {errors.message && (
-              <p id="message-error" className="mt-2 text-xs text-red-600">
+              <p
+                id="message-error"
+                className="mt-2 text-xs text-red-600"
+              >
                 {errors.message.message}
               </p>
             )}
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-6 py-4 font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-        >
-          {isSubmitting ? (
-            <LoaderCircle className="h-5 w-5 animate-spin" />
-          ) : (
-            <Send className="h-5 w-5" />
-          )}
+        {/* Submission options */}
+        <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <button
+            type="submit"
+            disabled={isSubmitting || sendingEmail}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-orange-500 px-6 py-3 font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {sendingEmail ? (
+              <LoaderCircle className="h-5 w-5 animate-spin" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
 
-          Prepare Enquiry Email
-        </button>
+            {sendingEmail ? "Sending Email..." : "Send Enquiry by Email"}
+          </button>
+
+          <button
+            type="button"
+            disabled={isSubmitting || sendingEmail}
+            onClick={handleSubmit(onSubmitWhatsApp)}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-green-600 px-6 py-3 font-semibold text-green-700 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <MessageSquare className="h-5 w-5" />
+            Enquire on WhatsApp
+          </button>
+        </div>
 
         <p className="mt-4 text-xs leading-6 text-gray-400">
-          Your email application must be configured to send the enquiry.
-          Submitting this form does not send or store your information on
-          our website.
+          Email enquiries are sent through EmailJS. WhatsApp opens a
+          prefilled message that you must review and send from WhatsApp.
         </p>
       </form>
     </div>

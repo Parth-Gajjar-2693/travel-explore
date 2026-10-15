@@ -7,9 +7,11 @@ export const siteConfig = {
 
   location: "Ahmedabad, Gujarat, India",
 
-  // Replace these placeholders before publishing.
   email: "parthgajjar127@gmail.com",
-  phone: "+97 9714485898",
+  phone: "+918320054936",
+
+  // WhatsApp number: country code + mobile number, digits only.
+  whatsappNumber: "918320054936",
 
   social: {
     instagram: "",
