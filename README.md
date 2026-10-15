@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Chamunda Tours & Travels 🌍
 
-## Getting Started
+**Your Journey, Our Priority**
 
-First, run the development server:
+Chamunda Tours & Travels is a travel website designed to help customers explore destinations, discover tour packages, and submit travel enquiries easily.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+The website provides destination information, tour package details, and convenient enquiry options through email and WhatsApp.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- 🏠 **Homepage** — Discover destinations and featured tour packages.
+- 🌏 **Destinations** — Explore available travel destinations and their details.
+- 🧳 **Tour Packages** — Browse tour packages and view package information.
+- 👥 **About Us** — Learn about Chamunda Tours & Travels.
+- 📩 **Contact & Enquiry Form** — Submit travel requirements through a form.
+- 📧 **Email Enquiries** — Send customer enquiries to the tour manager using EmailJS.
+- 💬 **WhatsApp Enquiries** — Open WhatsApp with a prefilled message containing the customer's travel details.
+- 📱 **Responsive Design** — Designed for desktop, tablet, and mobile screens.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Tech Stack
 
-## Learn More
+- **Framework:** Next.js (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Icons:** Lucide React
+- **Form Handling:** React Hook Form
+- **Form Validation:** Zod
+- **Email Integration:** EmailJS
+- **Deployment:** Vercel
 
-To learn more about Next.js, take a look at the following resources:
+## 📁 Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+src/
+├── app/
+│   ├── about/
+│   │   └── page.tsx
+│   ├── contact/
+│   │   └── page.tsx
+│   ├── destinations/
+│   │   ├── [slug]/
+│   │   │   └── page.tsx
+│   │   └── page.tsx
+│   ├── tours/
+│   │   ├── [slug]/
+│   │   │   └── page.tsx
+│   │   └── page.tsx
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── components/
+│   ├── layout/
+│   │   ├── Header.tsx
+│   │   └── Footer.tsx
+│   └── travel/
+├── config/
+│   └── site.ts
+└── data/
+    └── travels.ts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+public/
+└── images/
+    └── chamunda-logo.png
